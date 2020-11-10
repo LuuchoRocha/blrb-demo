@@ -5,32 +5,44 @@ body {
 
 body {
   font: 14px 'Century Gothic', Futura, sans-serif;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  align-content: center;
+  margin: 0px !important;
   background: linear-gradient(#eaeaea, #e0e0e0, #d0d0d0);
-  margin: 0px;
 }
 
-.main {
+:focus {
+  outline: 0;
+}
+
+#root {
+  height: 100%;
   display: flex;
-  flex-direction: row;
-  padding: 32px;
   justify-content: center;
   align-items: center;
-  align-content: center;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.recordButton {
   border-radius: 50%;
+  margin: 48px;
+  padding: 32px;
   background-color: #eaeaea;
   border: 0.01px solid #cecece;
   transition: all 400ms;
-  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.1), inset 4px 4px 16px rgba(255, 255, 255, 0.5);
   cursor: pointer;
+  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.1),
+    inset 4px 4px 16px rgba(255, 255, 255, 0.5);
 }
 
-.main:hover {
-  box-shadow: 2px 2px 16px rgba(0, 0, 0, 0.15), inset 8px 12px 32px rgba(255, 255, 255, 0.8);
+.recordButton:hover {
+  box-shadow: 1px 1px 8px rgba(0, 0, 0, 0.2),
+    inset 8px 12px 32px rgba(255, 255, 255, 0.8);
+  transform: scale(1.1, 1.1);
 }
 
 .mic {
@@ -39,7 +51,7 @@ body {
   transition: color 400ms !important;
 }
 
-.main:hover .mic {
-  color: #222222;
+.recordButton .mic.recording,
+.recordButton:hover .mic.recording {
+  color: #aa2222;
 }
-
