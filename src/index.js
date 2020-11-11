@@ -1,20 +1,12 @@
 import React, {useState, useRef, useCallback, useEffect} from 'react';
 import ReactDOM from 'react-dom';
 import MicRounded from '@material-ui/icons/MicRounded';
+import speech from '@google-cloud/speech';
 import './index.css';
 
-const getColor = (value) => {
-  return (
-    'rgb(' +
-    (value / 2 + 92) +
-    ',' +
-    (value / 2 + 84) +
-    ',' +
-    (value / 2 + 128) +
-    ')'
-  );
-};
-
+function lerp(start, end, t) {
+  return start * (1 - t) + end * t;
+}
 const BLRB = () => {
   const [recording, setRecording] = useState(false);
   const [chunks, setChunks] = useState([]);
@@ -54,12 +46,12 @@ const BLRB = () => {
         let x = 0;
 
         for (let i = 0; i < bufferLength; i++) {
-          barHeight = dataArray[i];
+          barHeight = lerp(0, height, dataArray[i] / 255);
 
-          canvasCtx.fillStyle = getColor(barHeight);
+          canvasCtx.fillStyle = '#9977ff';
           canvasCtx.fillRect(x, height - barHeight, barWidth, barHeight);
 
-          x += barWidth + 1;
+          x += barWidth + 10;
         }
       };
 

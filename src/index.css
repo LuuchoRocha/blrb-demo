@@ -35,7 +35,7 @@ body {
   cursor: pointer;
   box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.1),
     inset 8px 8px 16px rgba(255, 255, 255, 0.5);
-  z-index: 200;
+  z-index: 100;
 }
 
 .recordButton:hover {
@@ -59,14 +59,14 @@ audio {
   margin: 48px;
   border-radius: 64px;
   box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.2);
-  z-index: 300;
+  z-index: 100;
 }
 
 .canvas-wrapper {
   position: absolute;
   top: 0;
   left: 0;
-  z-index: 100;
+  z-index: 10;
 }
 
 .canvas-wrapper canvas {
