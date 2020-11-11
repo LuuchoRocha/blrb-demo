@@ -6,7 +6,7 @@ body {
 body {
   font: 14px 'Century Gothic', Futura, sans-serif;
   margin: 0px !important;
-  background: linear-gradient(#eaeaea, #e0e0e0, #d0d0d0);
+  background: #1f1f1f;
 }
 
 :focus {
@@ -17,7 +17,6 @@ body {
   height: 100%;
   display: flex;
   justify-content: center;
-  align-items: center;
 }
 
 .container {
@@ -29,20 +28,20 @@ body {
 
 .recordButton {
   border-radius: 50%;
-  margin: 48px;
   padding: 32px;
   background-color: #eaeaea;
   border: 0.01px solid #cecece;
   transition: all 400ms;
   cursor: pointer;
   box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.1),
-    inset 4px 4px 16px rgba(255, 255, 255, 0.5);
+    inset 8px 8px 16px rgba(255, 255, 255, 0.5);
+  z-index: 200;
 }
 
 .recordButton:hover {
   box-shadow: 1px 1px 8px rgba(0, 0, 0, 0.2),
-    inset 8px 12px 32px rgba(255, 255, 255, 0.8);
-  transform: scale(1.1, 1.1);
+    inset 8px 8px 32px rgba(255, 255, 255, 0.8);
+  transform: scale(1.25, 1.25);
 }
 
 .mic {
@@ -54,4 +53,23 @@ body {
 .recordButton .mic.recording,
 .recordButton:hover .mic.recording {
   color: #aa2222;
+}
+
+audio {
+  margin: 48px;
+  border-radius: 64px;
+  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.2);
+  z-index: 300;
+}
+
+.canvas-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 100;
+}
+
+.canvas-wrapper canvas {
+  border-radius: 4px;
+  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.2);
 }
