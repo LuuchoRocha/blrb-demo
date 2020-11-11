@@ -87,15 +87,11 @@ const BLRB = () => {
     if (!recording) {
       setChunks([]);
       setSrc([]);
-      mediaStream.current.disconnect();
-      mediaStream.current.connect(analyser.current);
       mediaRecorder.current.start(500);
       mediaRecorder.current.ondataavailable = handleDataAvailable;
       mediaRecorder.current.onstop = handleOnStop;
     } else {
       mediaRecorder.current.stop();
-      mediaStream.current.connect(audioCtx.current.destination);
-      mediaStream.current.connect(analyser.current);
     }
 
     setRecording(!recording);
@@ -109,7 +105,6 @@ const BLRB = () => {
         audioCtx.current = new (window.AudioContext ||
           window.webkitAudioContext)();
         mediaStream.current = audioCtx.current.createMediaStreamSource(s);
-        mediaStream.current.connect(audioCtx.current.destination);
         analyser.current = audioCtx.current.createAnalyser();
         analyser.current.fftSize = 128;
         mediaStream.current.connect(analyser.current);
