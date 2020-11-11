@@ -8,13 +8,36 @@ function lerp(start, end, t) {
   return start * (1 - t) + end * t;
 }
 
+function useWindowSize() {
+  const [windowSize, setWindowSize] = useState({
+    width: undefined,
+    height: undefined,
+  });
+
+  useEffect(() => {
+    function handleResize() {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    }
+    
+    window.addEventListener("resize", handleResize);
+    
+    handleResize();
+    
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return windowSize;
+}
+
 const BLRB = () => {
   const [recording, setRecording] = useState(false);
   const [chunks, setChunks] = useState([]);
   const [src, setSrc] = useState('');
-  const [width, setWidth] = useState(window.innerWidth);
-  const [height, setHeight] = useState(window.innerHeight);
   const [border, setBorder] = useState(0);
+  const size = useWindowSize();
 
   const stream = useRef(null);
   const mediaRecorder = useRef(null);
@@ -35,10 +58,7 @@ const BLRB = () => {
     let osc = document.getElementById('oscilloscope');
     let oscCtx = osc.getContext('2d');
 
-    // let metter = document.getElementById('metter');
-    // let metterContext = metter.getContext('2d');
-
-    oscCtx.clearRect(0, 0, width, height);
+    oscCtx.clearRect(0, 0, size.width, size.height);
 
     const draw = function () {
       frame.current = requestAnimationFrame(draw);
@@ -46,9 +66,9 @@ const BLRB = () => {
       analyser.current.getByteFrequencyData(dataArray);
 
       oscCtx.fillStyle = '#1f1f1f';
-      oscCtx.fillRect(0, 0, width, height);
+      oscCtx.fillRect(0, 0, size.width, size.height);
 
-      let barWidth = width / bufferLength;
+      let barWidth = size.width / bufferLength;
       let barHeight;
       let x = 0;
       let values = 0;
@@ -56,28 +76,19 @@ const BLRB = () => {
       for (let i = 0; i < bufferLength; i++) {
         values += dataArray[i];
 
-        barHeight = lerp(0, height, dataArray[i] / 255) - 1;
+        barHeight = lerp(0, size.height, dataArray[i] / 255) - 1;
 
         oscCtx.fillStyle = '#9977ff';
-        oscCtx.fillRect(x, height - barHeight, barWidth, barHeight);
+        oscCtx.fillRect(x, size.height - barHeight, barWidth, barHeight);
 
         x += barWidth + 3;
       }
-
-      // metterContext.clearRect(0, 0, width, height);
-      // metterContext.fillStyle = 'rgba(96, 96, 96, 0.2)';
-      // metterContext.fillRect(
-      //   0,
-      //   0,
-      //   width,
-      //   lerp(0, height, values / bufferLength / 255)
-      // );
 
       setBorder(Math.round(values / bufferLength));
     };
 
     draw();
-  }, [height, width]);
+  }, [size.height, size.width]);
 
   const handleDataAvailable = useCallback(
     (e) => {
@@ -123,11 +134,6 @@ const BLRB = () => {
         mediaStream.current.connect(analyser.current);
         animate();
       });
-
-      window.onresize = () => {
-        setWidth(window.innerWidth);
-        setHeight(window.innerHeight);
-      };
     }
 
     return () => {
@@ -139,13 +145,9 @@ const BLRB = () => {
 
   return (
     <div className="container">
-      <div
-        className="canvas-wrapper"
-        style={{width: width + 'px', height: height + 'px'}}
-      >
-        <canvas id="oscilloscope" width={width} height={height} />
+      <div className="canvas-wrapper" style={{width: size.width + 'px', height: size.height + 'px'}}>
+        <canvas id="oscilloscope" width={size.width} height={size.height} />
       </div>
-      <canvas id="metter" width={width} height={height} />
       <div
         className="recordButton"
         onClick={handleOnClick}
