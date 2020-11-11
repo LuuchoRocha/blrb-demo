@@ -31,16 +31,12 @@ body {
   padding: 32px;
   background-color: #eaeaea;
   border: 0.01px solid #cecece;
-  transition: all 400ms;
+  transition: transform 400ms;
   cursor: pointer;
-  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.1),
-    inset 8px 8px 16px rgba(255, 255, 255, 0.5);
   z-index: 100;
 }
 
 .recordButton:hover {
-  box-shadow: 1px 1px 8px rgba(0, 0, 0, 0.2),
-    inset 8px 8px 32px rgba(255, 255, 255, 0.8);
   transform: scale(1.25, 1.25);
 }
 
@@ -52,7 +48,7 @@ body {
 
 .recordButton .mic.recording,
 .recordButton:hover .mic.recording {
-  color: #aa2222;
+  color: #7766ee;
 }
 
 audio {
@@ -66,10 +62,21 @@ audio {
   position: absolute;
   top: 0;
   left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 10;
 }
 
-.canvas-wrapper canvas {
+#oscilloscope {
   border-radius: 4px;
   box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+#metter {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
 }
