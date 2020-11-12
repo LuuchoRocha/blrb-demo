@@ -8,6 +8,13 @@ function lerp(start, end, t) {
   return start * (1 - t) + end * t;
 }
 
+function getColor(value) {
+  const r = lerp(110, 210, value / 255);
+  const g = lerp(90, 190, value / 255);
+  const b = lerp(180, 255, value / 255);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
 function useWindowSize() {
   const [windowSize, setWindowSize] = useState({
     width: undefined,
@@ -78,7 +85,7 @@ const BLRB = () => {
 
         barHeight = lerp(0, size.height, dataArray[i] / 255) - 1;
 
-        oscCtx.fillStyle = '#9977ff';
+        oscCtx.fillStyle = getColor(dataArray[i]);
         oscCtx.fillRect(x, size.height - barHeight, barWidth, barHeight);
 
         x += barWidth + 3;
