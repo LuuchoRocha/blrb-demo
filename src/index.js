@@ -99,41 +99,25 @@ const BLRB = () => {
     draw();
   }, [size.height, size.width]);
 
-  const handleDataAvailable = useCallback(
-    (e) => {
-      chunks.push(e.data);
-    },
-    [chunks]
-  );
-
-  const handleOnStop = useCallback(
-    (e) => {
-      let blob = new Blob(chunks, {type: 'audio/ogg; codecs=opus'});
-      let audioURL = window.URL.createObjectURL(blob);
-      setSrc(audioURL);
-    },
-    [chunks]
-  );
-
   const handleOnClick = useCallback(() => {
     if (!recording) {
-      setChunks([]);
       setSrc([]);
-      mediaRecorder.current.start(500);
-      mediaRecorder.current.ondataavailable = handleDataAvailable;
-      mediaRecorder.current.onstop = handleOnStop;
+      mediaRecorder.current.start();
     } else {
       mediaRecorder.current.stop();
     }
 
     setRecording(!recording);
-  }, [handleDataAvailable, handleOnStop, recording]);
+  }, [recording]);
 
   useEffect(() => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices.getUserMedia({audio: true}).then((s) => {
         stream.current = s;
         mediaRecorder.current = new MediaRecorder(stream.current);
+        mediaRecorder.current.addEventListener('dataavailable', (e) => {
+          setSrc(URL.createObjectURL(e.data));
+        });
         audioCtx.current = new (window.AudioContext ||
           window.webkitAudioContext)();
         mediaStream.current = audioCtx.current.createMediaStreamSource(s);
