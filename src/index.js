@@ -2,7 +2,10 @@ import React, {useState, useRef, useCallback, useEffect} from 'react';
 import ReactDOM from 'react-dom';
 import MicRounded from '@material-ui/icons/MicRounded';
 import speech from '@google-cloud/speech';
+import AudioRecorder from 'audio-recorder-polyfill';
 import './index.css';
+
+window.MediaRecorder = AudioRecorder;
 
 function lerp(start, end, t) {
   return start * (1 - t) + end * t;
@@ -28,12 +31,12 @@ function useWindowSize() {
         height: window.innerHeight,
       });
     }
-    
-    window.addEventListener("resize", handleResize);
-    
+
+    window.addEventListener('resize', handleResize);
+
     handleResize();
-    
-    return () => window.removeEventListener("resize", handleResize);
+
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   return windowSize;
@@ -152,13 +155,16 @@ const BLRB = () => {
 
   return (
     <div className="container">
-      <div className="canvas-wrapper" style={{width: size.width + 'px', height: size.height + 'px'}}>
+      <div
+        className="canvas-wrapper"
+        style={{width: size.width + 'px', height: size.height + 'px'}}
+      >
         <canvas id="oscilloscope" width={size.width} height={size.height} />
       </div>
       <div
         className="recordButton"
         onClick={handleOnClick}
-        style={{boxShadow: `0px 0px ${border}px ${border/2}px #9977ffcc`}}
+        style={{boxShadow: `0px 0px ${border}px ${border / 2}px #9977ffcc`}}
       >
         <MicRounded className={'mic ' + (recording ? 'recording' : '')} />
       </div>
