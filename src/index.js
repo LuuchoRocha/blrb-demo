@@ -24,18 +24,24 @@ function useWindowSize() {
   });
 
   useEffect(() => {
-    function handleResize() {
-      setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    }
+    let timeoutID = NaN;
+    const handleResize = () => {
+      clearTimeout(timeoutID);
+      timeoutID = setTimeout(() => {
+        setWindowSize({
+          width: window.innerWidth,
+          height: window.innerHeight,
+        });
+      }, 100);
+    };
 
-    window.addEventListener('resize', handleResize);
-
+    window.onresize = handleResize;
     handleResize();
 
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(timeoutID);
+    };
   }, []);
 
   return windowSize;
@@ -43,10 +49,9 @@ function useWindowSize() {
 
 const BLRB = () => {
   const [recording, setRecording] = useState(false);
-  const [chunks, setChunks] = useState([]);
   const [src, setSrc] = useState('');
   const [border, setBorder] = useState(0);
-  const [borderColor, setBorderColor] = useState('#9977ff')
+  const [borderColor, setBorderColor] = useState('#9977ff');
   const size = useWindowSize();
 
   const stream = useRef(null);
@@ -96,8 +101,8 @@ const BLRB = () => {
       }
 
       db = Math.round(values / bufferLength);
-      setBorder(db/2);
-      setBorderColor(getColor(db))
+      setBorder(db / 2);
+      setBorderColor(getColor(db));
     };
 
     draw();
