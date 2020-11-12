@@ -1,7 +1,6 @@
 import React, {useState, useRef, useCallback, useEffect} from 'react';
 import ReactDOM from 'react-dom';
 import MicRounded from '@material-ui/icons/MicRounded';
-import speech from '@google-cloud/speech';
 import AudioRecorder from 'audio-recorder-polyfill';
 import './index.css';
 
