@@ -46,6 +46,7 @@ const BLRB = () => {
   const [chunks, setChunks] = useState([]);
   const [src, setSrc] = useState('');
   const [border, setBorder] = useState(0);
+  const [borderColor, setBorderColor] = useState('#9977ff')
   const size = useWindowSize();
 
   const stream = useRef(null);
@@ -66,6 +67,7 @@ const BLRB = () => {
 
     let osc = document.getElementById('oscilloscope');
     let oscCtx = osc.getContext('2d');
+    let db = 0;
 
     oscCtx.clearRect(0, 0, size.width, size.height);
 
@@ -93,7 +95,9 @@ const BLRB = () => {
         x += barWidth + 3;
       }
 
-      setBorder(Math.round(values / bufferLength));
+      db = Math.round(values / bufferLength);
+      setBorder(db/2);
+      setBorderColor(getColor(db))
     };
 
     draw();
@@ -123,7 +127,7 @@ const BLRB = () => {
         mediaStream.current = audioCtx.current.createMediaStreamSource(s);
         analyser.current = audioCtx.current.createAnalyser();
         analyser.current.fftSize = 128;
-        analyser.current.smoothingTimeConstant = 0.9;
+        analyser.current.smoothingTimeConstant = 0.85;
         mediaStream.current.connect(analyser.current);
         animate();
       });
@@ -147,7 +151,7 @@ const BLRB = () => {
       <div
         className="recordButton"
         onClick={handleOnClick}
-        style={{boxShadow: `0px 0px ${border}px ${border / 2}px #9977ffcc`}}
+        style={{boxShadow: `0px 0px 0px ${border}px ${borderColor}`}}
       >
         <MicRounded className={'mic ' + (recording ? 'recording' : '')} />
       </div>
