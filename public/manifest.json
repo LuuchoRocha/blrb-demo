@@ -1,20 +1,15 @@
 {
-  "short_name": "BLRB Demo",
-  "name": "BLRB Demo",
+  "short_name": "blrb",
+  "name": "blrb",
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#fafafa",
+  "background_color": "#1f1f1f",
   "icons": [
     {
       "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
+      "sizes": "48x48",
       "type": "image/x-icon"
-    },
-    {
-      "src": "logo.png",
-      "type": "image/png",
-      "sizes": "64x64"
     }
-  ],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#ffffff",
-  "background_color": "#1f1f1f"
+  ]
 }

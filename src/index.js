@@ -1,15 +1,13 @@
 import React, {useState, useRef, useCallback, useEffect} from 'react';
 import ReactDOM from 'react-dom';
 import MicRounded from '@material-ui/icons/MicRounded';
-import AudioRecorder from 'audio-recorder-polyfill';
 import './index.css';
+import RecordRTC from 'recordrtc';
 
 const MIN_DECIBELS = -100.0;
 const MAX_DECIBELS = 0.0;
 const GAP = 2;
 const MAX_BORDER = 100;
-
-window.MediaRecorder = AudioRecorder;
 
 const lerp = (x, y, a) => x * (1 - a) + y * a;
 const invlerp = (x, y, a) => clamp((a - x) / (y - x));
@@ -61,11 +59,11 @@ const BLRB = () => {
   const size = useWindowSize();
 
   const stream = useRef(null);
-  const mediaRecorder = useRef(null);
   const frame = useRef(null);
 
   const audioCtx = useRef(null);
   const mediaStream = useRef(null);
+  const mediaRecorder = useRef(null);
   const analyser = useRef(null);
 
   const animate = useCallback(() => {
@@ -122,9 +120,11 @@ const BLRB = () => {
   const handleOnClick = useCallback(async () => {
     if (!recording) {
       setSrc([]);
-      mediaRecorder.current.start();
+      mediaRecorder.current.startRecording();
     } else {
-      mediaRecorder.current.stop();
+      mediaRecorder.current.stopRecording(function () {
+        setSrc(URL.createObjectURL(mediaRecorder.current.getBlob()));
+      });
     }
 
     setRecording(!recording);
@@ -140,12 +140,8 @@ const BLRB = () => {
 
   useEffect(() => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices.getUserMedia({audio: true}).then((s) => {
+      navigator.mediaDevices.getUserMedia({audio: true}).then(async (s) => {
         stream.current = s;
-        mediaRecorder.current = new MediaRecorder(stream.current);
-        mediaRecorder.current.addEventListener('dataavailable', (e) => {
-          setSrc(URL.createObjectURL(e.data));
-        });
         audioCtx.current = new (window.AudioContext ||
           window.webkitAudioContext)();
         mediaStream.current = audioCtx.current.createMediaStreamSource(s);
@@ -153,6 +149,13 @@ const BLRB = () => {
         analyser.current.fftSize = 128;
         analyser.current.smoothingTimeConstant = 0.8;
         mediaStream.current.connect(analyser.current);
+        mediaRecorder.current = RecordRTC(s, {
+          type: 'audio',
+          mimeType: 'audio/wav',
+          numberOfAudioChannels: 1,
+          recorderType: RecordRTC.StereoAudioRecorder,
+        });
+
         animate();
       });
     }
