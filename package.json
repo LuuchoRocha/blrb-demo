@@ -18,12 +18,11 @@
     "web-vitals": "^0.2.4"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "run-p server start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "server": "npx node-env-run server --exec nodemon | npx pino-colada",
-    "dev": "run-p server start"
+    "server": "npx node-env-run server --exec nodemon | npx pino-colada"
   },
   "eslintConfig": {
     "extends": [
