@@ -1,18 +1,16 @@
 const express = require('express');
-const bodyParser = require('body-parser');
-const pino = require('express-pino-logger')();
-
+const https = require('https');
+const path = require('path');
+const fs = require('fs');
+const port = process.env.PORT || 3000;
+const key = fs.readFileSync(path.join(__dirname, '/../certs/selfsigned.key'));
+const cert = fs.readFileSync(path.join(__dirname,'/../certs/selfsigned.crt'));
 const app = express();
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(pino);
 
-app.get('/api/greeting', (req, res) => {
-  const name = req.query.name || 'World';
-  res.setHeader('Content-Type', 'application/json');
-  res.send(JSON.stringify({ greeting: `Hello ${name}!` }));
+app.use(express.static(path.join(__dirname, '..', 'build')));
+
+app.get('/', function (req, res) {
+  res.sendFile(path.join(__dirname, '..', 'build', 'index.html'));
 });
 
-app.listen(3001, () =>
-  console.log('Express server is running on localhost:3001')
-);
-
+https.createServer({key, cert}, app).listen(port);
