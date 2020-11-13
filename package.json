@@ -2,6 +2,7 @@
   "name": "blrb-demo",
   "version": "0.1.0",
   "private": true,
+  "proxy": "http://localhost:3001",
   "dependencies": {
     "@material-ui/core": "^4.11.0",
     "@material-ui/icons": "^4.9.1",
@@ -9,6 +10,8 @@
     "@testing-library/react": "^11.1.0",
     "@testing-library/user-event": "^12.1.10",
     "audio-recorder-polyfill": "^0.4.0",
+    "body-parser": "^1.19.0",
+    "express": "^4.17.1",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "react-scripts": "4.0.0",
@@ -18,7 +21,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "server": "npx node-env-run server --exec nodemon | npx pino-colada",
+    "dev": "run-p server start"
   },
   "eslintConfig": {
     "extends": [
@@ -37,5 +42,12 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "express-pino-logger": "^5.0.0",
+    "node-env-run": "^4.0.2",
+    "nodemon": "^2.0.6",
+    "npm-run-all": "^4.1.5",
+    "pino-colada": "^2.1.0"
   }
 }

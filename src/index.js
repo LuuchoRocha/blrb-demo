@@ -108,7 +108,11 @@ const BLRB = () => {
     draw();
   }, [size.height, size.width]);
 
-  const handleOnClick = useCallback(() => {
+  const handleOnClick = useCallback(async () => {
+    const response = await fetch('/api/greeting');
+    const json = await response.json();
+    console.log(json);
+
     if (!recording) {
       setSrc([]);
       mediaRecorder.current.start();
