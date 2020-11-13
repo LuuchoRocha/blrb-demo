@@ -4,6 +4,8 @@ import MicRounded from '@material-ui/icons/MicRounded';
 import AudioRecorder from 'audio-recorder-polyfill';
 import './index.css';
 
+const OMITTED_BANDS = 6;
+
 window.MediaRecorder = AudioRecorder;
 
 function lerp(start, end, t) {
@@ -11,9 +13,9 @@ function lerp(start, end, t) {
 }
 
 function getColor(value) {
-  const r = lerp(110, 210, value / 255);
-  const g = lerp(90, 190, value / 255);
-  const b = lerp(180, 255, value / 255);
+  const r = lerp(110, 200, value / 255);
+  const g = lerp(90, 180, value / 255);
+  const b = lerp(180, 250, value / 255);
   return `rgb(${r}, ${g}, ${b})`;
 }
 
@@ -84,13 +86,13 @@ const BLRB = () => {
       oscCtx.fillStyle = '#1f1f1f';
       oscCtx.fillRect(0, 0, size.width, size.height);
 
-      let barWidth = size.width / bufferLength;
+      let barWidth = size.width / (bufferLength - OMITTED_BANDS);
       let barHeight;
       let x = 0;
       let values = 0;
 
-      for (let i = 0; i < bufferLength; i++) {
-        values += dataArray[i];
+      for (let i = 0; i < bufferLength - OMITTED_BANDS; i++) {
+        values += dataArray[i + OMITTED_BANDS];
 
         barHeight = lerp(0, size.height, dataArray[i] / 255) - 1;
 
@@ -100,7 +102,7 @@ const BLRB = () => {
         x += barWidth + 3;
       }
 
-      db = Math.round(values / bufferLength);
+      db = Math.round(values / (bufferLength - OMITTED_BANDS));
       setBorder(db / 2);
       setBorderColor(getColor(db));
     };
@@ -132,6 +134,7 @@ const BLRB = () => {
         mediaStream.current = audioCtx.current.createMediaStreamSource(s);
         analyser.current = audioCtx.current.createAnalyser();
         analyser.current.fftSize = 128;
+        analyser.current.minDecibels = -75.0;
         analyser.current.smoothingTimeConstant = 0.85;
         mediaStream.current.connect(analyser.current);
         animate();
