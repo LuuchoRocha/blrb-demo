@@ -4,16 +4,21 @@ import MicRounded from '@material-ui/icons/MicRounded';
 import AudioRecorder from 'audio-recorder-polyfill';
 import './index.css';
 
-const OMITTED_BANDS = 6;
+const OMITTED_BANDS = 2;
+const MIN_DECIBELS = 0;
+const MAX_DECIBELS = 255;
+const GAP = 2;
+const MAX_BORDER = 32;
 
 window.MediaRecorder = AudioRecorder;
 
-function lerp(start, end, t) {
-  return start * (1 - t) + end * t;
-}
+const lerp = (x, y, a) => x * (1 - a) + y * a;
+const invlerp = (x, y, a) => clamp((a - x) / (y - x));
+const clamp = (a, min = 0, max = 1) => Math.min(max, Math.max(min, a));
+const range = (x1, y1, x2, y2, a) => lerp(x2, y2, invlerp(x1, y1, a));
 
 function getColor(value) {
-  const r = lerp(110, 200, value / 255);
+  const r = lerp(100, 180, value / 255);
   const g = lerp(90, 180, value / 255);
   const b = lerp(180, 250, value / 255);
   return `rgb(${r}, ${g}, ${b})`;
@@ -31,10 +36,10 @@ function useWindowSize() {
       clearTimeout(timeoutID);
       timeoutID = setTimeout(() => {
         setWindowSize({
-          width: window.innerWidth,
+          width: window.innerWidth * window.devicePixelRatio,
           height: window.innerHeight,
         });
-      }, 100);
+      }, 50);
     };
 
     window.onresize = handleResize;
@@ -93,18 +98,19 @@ const BLRB = () => {
 
       for (let i = 0; i < bufferLength - OMITTED_BANDS; i++) {
         values += dataArray[i + OMITTED_BANDS];
-
-        barHeight = lerp(0, size.height, dataArray[i] / 255) - 1;
+        barHeight = range(MIN_DECIBELS, MAX_DECIBELS, 0, size.height, dataArray[i]);
 
         oscCtx.fillStyle = getColor(dataArray[i]);
         oscCtx.fillRect(x, size.height - barHeight, barWidth, barHeight);
 
-        x += barWidth + 3;
+        x += barWidth + GAP;
       }
 
-      db = Math.round(values / (bufferLength - OMITTED_BANDS));
-      setBorder(db / 2);
-      setBorderColor(getColor(db));
+      values = values / (bufferLength - OMITTED_BANDS) * MAX_BORDER;
+      values = range(MIN_DECIBELS, MAX_DECIBELS, 0, MAX_BORDER, values);
+
+      setBorder(values);
+      setBorderColor(getColor(values));
     };
 
     draw();
@@ -121,6 +127,14 @@ const BLRB = () => {
     setRecording(!recording);
   }, [recording]);
 
+  const AudioPlayer = useCallback(() => {
+    if (src) {
+      return <audio src={src} controls={true} />;
+    } else {
+      return <audio controls={true} />;
+    }
+  }, [src]);
+
   useEffect(() => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices.getUserMedia({audio: true}).then((s) => {
@@ -133,9 +147,9 @@ const BLRB = () => {
           window.webkitAudioContext)();
         mediaStream.current = audioCtx.current.createMediaStreamSource(s);
         analyser.current = audioCtx.current.createAnalyser();
-        analyser.current.fftSize = 128;
+        analyser.current.fftSize = 256;
         analyser.current.minDecibels = -75.0;
-        analyser.current.smoothingTimeConstant = 0.85;
+        analyser.current.smoothingTimeConstant = 0.9;
         mediaStream.current.connect(analyser.current);
         animate();
       });
@@ -163,7 +177,7 @@ const BLRB = () => {
       >
         <MicRounded className={'mic ' + (recording ? 'recording' : '')} />
       </div>
-      <audio src={src} controls={true}></audio>
+      <AudioPlayer />
     </div>
   );
 };
