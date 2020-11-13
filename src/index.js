@@ -120,6 +120,12 @@ const BLRB = () => {
   const handleOnClick = useCallback(async () => {
     if (!recording) {
       setSrc([]);
+      mediaRecorder.current = RecordRTC(stream.current, {
+        type: 'audio',
+        mimeType: 'audio/wav',
+        numberOfAudioChannels: 1,
+        recorderType: RecordRTC.StereoAudioRecorder,
+      });
       mediaRecorder.current.startRecording();
     } else {
       mediaRecorder.current.stopRecording(function () {
@@ -149,12 +155,6 @@ const BLRB = () => {
         analyser.current.fftSize = 128;
         analyser.current.smoothingTimeConstant = 0.8;
         mediaStream.current.connect(analyser.current);
-        mediaRecorder.current = RecordRTC(s, {
-          type: 'audio',
-          mimeType: 'audio/wav',
-          numberOfAudioChannels: 1,
-          recorderType: RecordRTC.StereoAudioRecorder,
-        });
 
         animate();
       });
