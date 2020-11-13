@@ -4,11 +4,10 @@ import MicRounded from '@material-ui/icons/MicRounded';
 import AudioRecorder from 'audio-recorder-polyfill';
 import './index.css';
 
-const OMITTED_BANDS = 2;
-const MIN_DECIBELS = 0;
-const MAX_DECIBELS = 255;
+const MIN_DECIBELS = -100.0;
+const MAX_DECIBELS = 0.0;
 const GAP = 2;
-const MAX_BORDER = 32;
+const MAX_BORDER = 100;
 
 window.MediaRecorder = AudioRecorder;
 
@@ -71,46 +70,50 @@ const BLRB = () => {
 
   const animate = useCallback(() => {
     let bufferLength = analyser.current.frequencyBinCount;
-    let dataArray = new Uint8Array(bufferLength);
-    let dataTimeArray = new Uint8Array(bufferLength);
+    let dataArray = new Float32Array(bufferLength);
 
-    analyser.current.getByteFrequencyData(dataArray);
-    analyser.current.getByteTimeDomainData(dataTimeArray);
+    analyser.current.getFloatFrequencyData(dataArray);
 
     let osc = document.getElementById('oscilloscope');
     let oscCtx = osc.getContext('2d');
-    let db = 0;
 
     oscCtx.clearRect(0, 0, size.width, size.height);
 
     const draw = function () {
       frame.current = requestAnimationFrame(draw);
 
-      analyser.current.getByteFrequencyData(dataArray);
+      analyser.current.getFloatFrequencyData(dataArray);
 
       oscCtx.fillStyle = '#1f1f1f';
       oscCtx.fillRect(0, 0, size.width, size.height);
 
-      let barWidth = size.width / (bufferLength - OMITTED_BANDS);
-      let barHeight;
       let x = 0;
-      let values = 0;
+      let average = 0;
+      let barWidth = size.width / bufferLength;
+      let barHeight, borderWidth, borderColorValue;
 
-      for (let i = 0; i < bufferLength - OMITTED_BANDS; i++) {
-        values += dataArray[i + OMITTED_BANDS];
-        barHeight = range(MIN_DECIBELS, MAX_DECIBELS, 0, size.height, dataArray[i]);
+      for (let i = 0; i < bufferLength; i++) {
+        barHeight = range(
+          MIN_DECIBELS,
+          MAX_DECIBELS,
+          0,
+          size.height / 2,
+          dataArray[i]
+        );
+        average += barHeight;
 
-        oscCtx.fillStyle = getColor(dataArray[i]);
+        oscCtx.fillStyle = getColor(range(0, size.height, 0, 255, barHeight));
         oscCtx.fillRect(x, size.height - barHeight, barWidth, barHeight);
 
         x += barWidth + GAP;
       }
 
-      values = values / (bufferLength - OMITTED_BANDS) * MAX_BORDER;
-      values = range(MIN_DECIBELS, MAX_DECIBELS, 0, MAX_BORDER, values);
+      average = average / bufferLength;
+      borderWidth = range(0, size.height / 2, 0, MAX_BORDER, average);
+      borderColorValue = range(0, size.height / 2, 0, 255, average);
 
-      setBorder(values);
-      setBorderColor(getColor(values));
+      setBorder(borderWidth);
+      setBorderColor(getColor(borderColorValue));
     };
 
     draw();
@@ -147,9 +150,8 @@ const BLRB = () => {
           window.webkitAudioContext)();
         mediaStream.current = audioCtx.current.createMediaStreamSource(s);
         analyser.current = audioCtx.current.createAnalyser();
-        analyser.current.fftSize = 256;
-        analyser.current.minDecibels = -75.0;
-        analyser.current.smoothingTimeConstant = 0.9;
+        analyser.current.fftSize = 128;
+        analyser.current.smoothingTimeConstant = 0.8;
         mediaStream.current.connect(analyser.current);
         animate();
       });
