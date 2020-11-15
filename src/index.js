@@ -36,7 +36,7 @@ function useWindowSize() {
           width: window.innerWidth * window.devicePixelRatio,
           height: window.innerHeight,
         });
-      }, 50);
+      }, 1);
     };
 
     window.onresize = handleResize;
@@ -56,6 +56,7 @@ const BLRB = () => {
   const [src, setSrc] = useState('');
   const [border, setBorder] = useState(0);
   const [borderColor, setBorderColor] = useState('#9977ff');
+
   const size = useWindowSize();
 
   const stream = useRef(null);
@@ -119,12 +120,15 @@ const BLRB = () => {
 
   const handleOnClick = useCallback(async () => {
     if (!recording) {
-      setSrc([]);
+      setSrc('');
       mediaRecorder.current = RecordRTC(stream.current, {
         type: 'audio',
         mimeType: 'audio/wav',
         numberOfAudioChannels: 1,
         recorderType: RecordRTC.StereoAudioRecorder,
+        timeSlice: 1000,
+        sampleRate: 44100,
+        desiredSampRate: 16000,
       });
       mediaRecorder.current.startRecording();
     } else {
@@ -137,11 +141,11 @@ const BLRB = () => {
   }, [recording]);
 
   const AudioPlayer = useCallback(() => {
-    if (src) {
-      return <audio src={src} controls={true} />;
-    } else {
-      return <audio controls={true} />;
-    }
+    return (
+      <audio controls={true}>
+        <source type="audio/wav" src={src} />
+      </audio>
+    );
   }, [src]);
 
   useEffect(() => {
