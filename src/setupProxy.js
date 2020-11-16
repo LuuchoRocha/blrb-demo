@@ -1,8 +1,9 @@
 const proxy = require("http-proxy-middleware");
 const PORT = process.env.PROXY_PORT || 3001;
+const URL = process.env.PROXY_URL || 'http://localhost';
 
 const options = { 
-  target: `http://localhost:${PORT}/`,
+  target: `${URL}:${PORT}`,
   ws: true,
   xfwd: true,
 };

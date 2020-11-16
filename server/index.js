@@ -5,12 +5,14 @@ const http = require('http');
 const io = require('socket.io');
 const ss = require('socket.io-stream');
 const fs = require('fs');
+const path = require('path');
 
 class Server {
   constructor() {
     this.clients = {};
     this.app = express();
     this.addMiddlewares();
+    this.serveStatic();
     this.defineRoutes();
     this.createServer();
     this.createSocket();
@@ -21,6 +23,12 @@ class Server {
     this.app.use(pino());
   }
 
+  serveStatic() {
+    if (process.env.NODE_ENV === 'production') {
+      this.app.use(express.static(path.join(__dirname, '../build')));
+    }
+  }
+
   createServer() {
     this.server = http.createServer(this.app);
   }
@@ -29,34 +37,50 @@ class Server {
     this.socket = io(this.server);
 
     this.socket.on('connection', (socket) => {
-      const remoteAddress = socket.handshake.headers['x-forwarded-for'];
-      console.log('Connected from ' + remoteAddress);
+      let remoteAddress;
+      
+      if (process.env.NODE_ENV === 'production') {
+        remoteAddress = socket.handshake.address;
+      } else {
+        remoteAddress = socket.handshake.headers['x-forwarded-for'];
+      }
 
       socket.emit('success', remoteAddress);
 
       socket.on('start', () => {
         this.clients[remoteAddress] = {
           id: remoteAddress,
-          file: `streams/${remoteAddress.replace(/[^\w]/gi, '-')}-${Date.now()}.wav`,
-        }
+          file: `streams/${remoteAddress.replace(
+            /[^\w]/gi,
+            '-'
+          )}-${Date.now()}.wav`,
+        };
       });
 
       ss(socket).on('stream', (stream, _data) => {
-        stream.pipe(fs.createWriteStream(this.clients[remoteAddress].file, {flags: 'a'}));
+        stream.pipe(
+          fs.createWriteStream(this.clients[remoteAddress].file, {flags: 'a'})
+        );
       });
     });
   }
 
   defineRoutes() {
-    this.app.get('/api/greeting', (req, res) => {
-      const name = req.query.name || 'World';
-      res.setHeader('Content-Type', 'application/json');
-      res.send(JSON.stringify({greeting: `Hello ${name}!`}));
-    });
+    if (process.env.NODE_ENV === 'production') {
+      this.app.get('/', (req, res) => {
+        res.sendFile(path.join(__dirname, '..', 'build', 'index.html'));
+      });
+    } else {
+      this.app.get('/api/greeting', (req, res) => {
+        const name = req.query.name || 'World';
+        res.setHeader('Content-Type', 'application/json');
+        res.send(JSON.stringify({greeting: `Hello ${name}!`}));
+      });
+    }
   }
 
   listen() {
-    this.server.listen(3001, () => {
+    this.server.listen(process.env.PORT || 3001, () => {
       console.log('Server up and listening...');
     });
   }

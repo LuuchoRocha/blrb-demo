@@ -31,10 +31,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "server-pro": "npx node-env-run server | npx pino-colada",
-    "server-dev": "npx node-env-run server --exec nodemon | npx pino-colada",
-    "dev": "run-p server-dev start",
-    "heroku": "run-p server-pro start"
+    "dev": "npx node-env-run server --exec nodemon | npx pino-colada",
+    "live": "npx node-env-run server | npx pino-colada"
   },
   "eslintConfig": {
     "extends": [
