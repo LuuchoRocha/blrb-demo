@@ -22,6 +22,7 @@
     "react-scripts": "4.0.0",
     "recordrtc": "^5.6.1",
     "socket.io": "^3.0.1",
+    "socket.io-client": "^3.0.1",
     "socket.io-stream": "^0.9.1",
     "web-vitals": "^0.2.4"
   },
