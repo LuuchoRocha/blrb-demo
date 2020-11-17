@@ -57,10 +57,11 @@ class Server {
         };
       });
 
-      ss(socket).on('stream', (stream, _data) => {
-        stream.pipe(
-          fs.createWriteStream(this.clients[remoteAddress].file, {flags: 'a'})
-        );
+      ss(socket).on('stream', (stream, data) => {
+        socket.emit('translated', data);
+        // stream.pipe(
+        //   fs.createWriteStream(this.clients[remoteAddress].file, {flags: 'a'})
+        // );
       });
     });
   }

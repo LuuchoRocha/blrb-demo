@@ -166,6 +166,11 @@ const BLRB = () => {
       console.log('Connected from ' + address);
     });
 
+    socket.current.on('translated', (data) => {
+      console.log('STT response with:');
+      console.log(data);
+    });
+
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices.getUserMedia({audio: true}).then(async (s) => {
         stream.current = s;
