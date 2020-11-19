@@ -53,6 +53,7 @@ const BLRB = () => {
   const [src, setSrc] = useState('');
   const [border, setBorder] = useState(0);
   const [borderColor, setBorderColor] = useState('#9977ff');
+  const [transcript, setTranscript] = useState([]);
 
   const size = useWindowSize();
 
@@ -121,18 +122,17 @@ const BLRB = () => {
   const handleOnClick = useCallback(async () => {
     if (!recording) {
       setSrc('');
-      socket.current.emit('start')
+      setTranscript([]);
+      socket.current.emit('start');
       mediaRecorder.current = RecordRTC(stream.current, {
-        // For some reason, each blob of StereoAudioRecorder contains its own headers thus it can not be streamed and appended
-        // like a regular stream, because each blob given in `ondatavailable` is a new blob and not a chunk of a continuos stream.
-        // recorderType: RecordRTC.StereoAudioRecorder,
+        recorderType: RecordRTC.StereoAudioRecorder,
         type: 'audio',
         mimeType: 'audio/wav',
         numberOfAudioChannels: 1,
-        timeSlice: 500,
+        timeSlice: 2000,
         sampleRate: 44100,
         desiredSampRate: 16000,
-        ondataavailable: function (blob) {
+        ondataavailable: (blob) => {
           socketStream.current = ss.createStream();
           ss(socket.current).emit('stream', socketStream.current, {
             name: 'stream.wav',
@@ -144,7 +144,9 @@ const BLRB = () => {
       mediaRecorder.current.startRecording();
     } else {
       mediaRecorder.current.stopRecording(function () {
-        setSrc(URL.createObjectURL(mediaRecorder.current.getBlob()));
+        const blob = mediaRecorder.current.getBlob();
+        setSrc(URL.createObjectURL(blob));
+        socket.current.emit('correct', blob);
       });
     }
 
@@ -167,8 +169,13 @@ const BLRB = () => {
     });
 
     socket.current.on('translated', (data) => {
-      console.log('STT response with:');
-      console.log(data);
+      transcript.push(data.transcript);
+    });
+
+    socket.current.on('corrected', (data) => {
+      if (data && data.results) {
+        setTranscript([data.results[0].alternatives[0].transcript]);
+      }
     });
 
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -191,7 +198,7 @@ const BLRB = () => {
         cancelAnimationFrame(frame.current);
       }
     };
-  }, [animate]);
+  }, [animate, transcript]);
 
   return (
     <div className="container">
@@ -209,6 +216,7 @@ const BLRB = () => {
         <MicRounded className={'mic ' + (recording ? 'recording' : '')} />
       </div>
       <AudioPlayer />
+      <p className="transcript">{transcript.join(' ')}</p>
     </div>
   );
 };

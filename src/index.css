@@ -80,3 +80,10 @@ audio {
   bottom: 0;
   z-index: 10;
 }
+
+.transcript {
+  z-index: 10;
+  color: #ffffff;
+  font-size: 2rem;
+  height: 2rem;
+}

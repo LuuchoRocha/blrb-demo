@@ -6,6 +6,7 @@ const io = require('socket.io');
 const ss = require('socket.io-stream');
 const fs = require('fs');
 const path = require('path');
+const speech = require('./speech');
 
 class Server {
   constructor() {
@@ -38,7 +39,7 @@ class Server {
 
     this.socket.on('connection', (socket) => {
       let remoteAddress;
-      
+
       if (process.env.NODE_ENV === 'production') {
         remoteAddress = socket.handshake.address;
       } else {
@@ -58,10 +59,18 @@ class Server {
       });
 
       ss(socket).on('stream', (stream, data) => {
-        socket.emit('translated', data);
-        // stream.pipe(
-        //   fs.createWriteStream(this.clients[remoteAddress].file, {flags: 'a'})
-        // );
+        stream.pipe(
+          fs.createWriteStream(this.clients[remoteAddress].file, {flags: 'a'})
+        );
+        
+        speech.speechStreamToText(stream, (response) => {
+          socket.emit('translated', response);
+        });
+      });
+
+      socket.on('correct', async (audio) => {
+        const corrected = await speech.speechToText(audio);
+        socket.emit('corrected', corrected);
       });
     });
   }
