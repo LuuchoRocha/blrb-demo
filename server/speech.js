@@ -6,7 +6,18 @@ class Speech {
   }
 
   setupSpeech() {
-    this.stt = new speechToText.SpeechClient();
+    if (process.env.NODE_ENV === 'production') {
+      this.stt = new speechToText.SpeechClient({
+        projectId: process.env.GOOGLE_PROJECT_ID,
+        credentials: {
+          client_email: process.env.GOOGLE_CLIENT_EMAIL,
+          private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+        },
+      });
+    } else {
+      this.stt = new speechToText.SpeechClient();
+    }
+
     this.sttRequest = {
       interim_results: false,
       config: {
