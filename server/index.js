@@ -44,7 +44,7 @@ class Server {
       ss(socket).on('stream', (stream, data) => {
         if (!this.clients[id]) {
           this.clients[id] = {
-            file: `streams/${id}-${Date.now()}.wav`,
+            file: `${id}-${Date.now()}.wav`,
           };
         }
 
