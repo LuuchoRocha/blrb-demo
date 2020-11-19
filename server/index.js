@@ -7,6 +7,7 @@ const ss = require('socket.io-stream');
 const fs = require('fs');
 const path = require('path');
 const speech = require('./speech');
+const uuid = require('uuid').v4;
 
 class Server {
   constructor() {
@@ -38,39 +39,24 @@ class Server {
     this.socket = io(this.server);
 
     this.socket.on('connection', (socket) => {
-      let remoteAddress;
-
-      if (process.env.NODE_ENV === 'production') {
-        remoteAddress = socket.handshake.address;
-      } else {
-        remoteAddress = socket.handshake.headers['x-forwarded-for'];
-      }
-
-      socket.emit('success', remoteAddress);
-
-      socket.on('start', () => {
-        this.clients[remoteAddress] = {
-          id: remoteAddress,
-          file: `streams/${remoteAddress.replace(
-            /[^\w]/gi,
-            '-'
-          )}-${Date.now()}.wav`,
-        };
-      });
+      const id = uuid();
 
       ss(socket).on('stream', (stream, data) => {
-        stream.pipe(
-          fs.createWriteStream(this.clients[remoteAddress].file, {flags: 'a'})
-        );
-        
+        if (!this.clients[id]) {
+          this.clients[id] = {
+            file: `streams/${id}-${Date.now()}.wav`,
+          };
+        }
+
+        stream.pipe(fs.createWriteStream(this.clients[id].file, {flags: 'a'}));
+
         speech.speechStreamToText(stream, (response) => {
           socket.emit('translated', response);
         });
       });
 
       socket.on('correct', async (audio) => {
-        const corrected = await speech.speechToText(audio);
-        socket.emit('corrected', corrected);
+        socket.emit('corrected', await speech.speechToText(audio));
       });
     });
   }

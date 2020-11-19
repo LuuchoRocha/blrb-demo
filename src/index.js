@@ -123,7 +123,6 @@ const BLRB = () => {
     if (!recording) {
       setSrc('');
       setTranscript([]);
-      socket.current.emit('start');
       mediaRecorder.current = RecordRTC(stream.current, {
         recorderType: RecordRTC.StereoAudioRecorder,
         type: 'audio',
@@ -163,10 +162,6 @@ const BLRB = () => {
 
   useEffect(() => {
     socket.current = io();
-
-    socket.current.on('success', (address) => {
-      console.log('Connected from ' + address);
-    });
 
     socket.current.on('translated', (data) => {
       transcript.push(data.transcript);

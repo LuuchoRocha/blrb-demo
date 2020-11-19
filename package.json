@@ -26,6 +26,7 @@
     "socket.io": "^3.0.1",
     "socket.io-client": "^3.0.1",
     "socket.io-stream": "^0.9.1",
+    "uuid": "^8.3.1",
     "web-vitals": "^0.2.4"
   },
   "scripts": {
