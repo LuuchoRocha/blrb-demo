@@ -1,6 +1,9 @@
-import React, {useState, useRef, useCallback, useEffect} from 'react';
+import React, {useState, useRef, useCallback, useEffect, useMemo} from 'react';
 import ReactDOM from 'react-dom';
-import MicRounded from '@material-ui/icons/MicRounded';
+import RecordIcon from '@material-ui/icons/MicNoneRounded';
+import StopIcon from '@material-ui/icons/StopRounded';
+import PlayIcon from '@material-ui/icons/PlayArrowRounded';
+import PauseIcon from '@material-ui/icons/PauseRounded';
 import RecordRTC from 'recordrtc';
 import io from 'socket.io-client';
 import './index.css';
@@ -85,9 +88,9 @@ function useWindowSize() {
 
 const BLRB = () => {
   const [recording, setRecording] = useState(false);
+  const [playing, setPlaying] = useState(false);
   const [src, setSrc] = useState('');
   const [border, setBorder] = useState(0);
-  const [borderColor, setBorderColor] = useState('#9977ff');
   const [transcript, setTranscript] = useState([]);
 
   const size = useWindowSize();
@@ -109,7 +112,7 @@ const BLRB = () => {
 
     analyser.current.getFloatFrequencyData(dataArray);
 
-    let osc = document.getElementById('oscilloscope');
+    let osc = document.getElementById('barsGraph');
     let oscCtx = osc.getContext('2d');
 
     oscCtx.clearRect(0, 0, size.width, size.height);
@@ -125,7 +128,7 @@ const BLRB = () => {
       let x = 0;
       let average = 0;
       let barWidth = size.width / bufferLength;
-      let barHeight, borderWidth, borderColorValue;
+      let barHeight, borderWidth;
 
       for (let i = 0; i < bufferLength; i++) {
         barHeight = range(
@@ -145,55 +148,71 @@ const BLRB = () => {
 
       average = average / bufferLength;
       borderWidth = range(0, size.height / 2, 0, MAX_BORDER, average);
-      borderColorValue = range(0, size.height / 2, 0, 255, average);
 
       setBorder(borderWidth);
-      setBorderColor(getColor(borderColorValue));
     };
 
     draw();
   }, [size.height, size.width]);
 
-  const handleOnClick = useCallback(async () => {
-    if (!recording) {
-      socket.current.emit('startRecognition');
-      setSrc('');
-      setTranscript([]);
-      mediaRecorder.current = RecordRTC(stream.current, {
-        recorderType: RecordRTC.StereoAudioRecorder,
-        type: 'audio',
-        mimeType: 'audio/wav',
-        numberOfAudioChannels: 1,
-        sampleRate: 44100,
-        desiredSampRate: 16000,
-      });
-      mediaRecorder.current.startRecording();
-      processor.current.onaudioprocess = (e) => {
-        socket.current.emit(
-          'streamAudio',
-          resampleBuffer(e.inputBuffer.getChannelData(0), 44100, 16000)
-        );
-      };
-    } else {
-      socket.current.emit('stopRecognition');
-      mediaRecorder.current.stopRecording(function () {
-        const blob = mediaRecorder.current.getBlob();
-        setSrc(URL.createObjectURL(blob));
-        socket.current.emit('correct', blob);
-      });
-      processor.current.onaudioprocess = null;
+  const handleRecord = useCallback(() => {
+    setSrc('');
+    setTranscript([]);
+    setRecording(true);
+
+    socket.current.emit('startRecognition');
+
+    mediaRecorder.current = RecordRTC(stream.current, {
+      recorderType: RecordRTC.StereoAudioRecorder,
+      type: 'audio',
+      mimeType: 'audio/wav',
+      numberOfAudioChannels: 1,
+      sampleRate: 44100,
+      desiredSampRate: 16000,
+    });
+
+    mediaRecorder.current.startRecording();
+
+    processor.current.onaudioprocess = (e) => {
+      socket.current.emit(
+        'streamAudio',
+        resampleBuffer(e.inputBuffer.getChannelData(0), 44100, 16000)
+      );
+    };
+  }, []);
+
+  const handleStop = useCallback(() => {
+    setRecording(false);
+
+    socket.current.emit('stopRecognition');
+    mediaStream.current.disconnect();
+    processor.current.onaudioprocess = null;
+
+    mediaRecorder.current.stopRecording(function () {
+      const blob = mediaRecorder.current.getBlob();
+      setSrc(URL.createObjectURL(blob));
+      socket.current.emit('correct', blob);
+    });
+  }, []);
+
+  const handlePlay = useCallback(() => {}, []);
+
+  const handlePause = useCallback(() => {}, []);
+  
+  const handleOnClick = useCallback(() => {
+    switch (true) {
+      case !src.length && !recording:
+        return handleRecord();
+      case !src.length && recording:
+        return handleStop();
+      case src.length && !playing:
+        return handlePlay();
+      case src.length && playing:
+        return handlePause();
+      default:
+        return handleRecord();
     }
-
-    setRecording(!recording);
-  }, [recording]);
-
-  const AudioPlayer = useCallback(() => {
-    return (
-      <audio controls={true}>
-        <source type="audio/wav" src={src} />
-      </audio>
-    );
-  }, [src]);
+  }, [handlePause, handlePlay, handleRecord, handleStop, playing, recording, src.length]);
 
   useEffect(() => {
     socket.current = io();
@@ -241,23 +260,43 @@ const BLRB = () => {
     }
   }, [transcript]);
 
+  const RecordButton = useCallback(
+    (props) => {
+      switch (true) {
+        case !src.length && !recording:
+          return <RecordIcon {...props} className="record-button record" />;
+        case !src.length && recording:
+          return <StopIcon {...props} className="record-button stop" />;
+        case src.length && !playing:
+          return <PlayIcon {...props} className="record-button play" />;
+        case src.length && playing:
+          return <PauseIcon {...props} className="record-button pause" />;
+        default:
+          return <RecordIcon {...props} className="record-button record" />;
+      }
+    },
+    [playing, recording, src.length]
+  );
+
   return (
     <div className="container">
       <div
-        className="canvas-wrapper"
+        id="canvas-wrapper"
         style={{width: size.width + 'px', height: size.height + 'px'}}
       >
-        <canvas id="oscilloscope" width={size.width} height={size.height} />
+        <canvas id="barsGraph" width={size.width} height={size.height} />
       </div>
       <div
-        className="recordButton"
+        className={'record-button-wrapper ' + (recording ? 'recording' : '')}
         onClick={handleOnClick}
-        style={{boxShadow: `0px 0px 0px ${border}px ${borderColor}`}}
+        key="button"
+        style={{boxShadow: `0px 0px 0px 1px #000000`}}
       >
-        <MicRounded className={'mic ' + (recording ? 'recording' : '')} />
+        <RecordButton />
       </div>
-      <AudioPlayer />
-      <p className="transcript">{transcript.join(' ')}</p>
+      <p className={'transcript ' + (recording ? 'recording' : '')}>
+        {transcript.join(' ')}
+      </p>
     </div>
   );
 };

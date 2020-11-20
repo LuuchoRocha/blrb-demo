@@ -22,45 +22,55 @@ body {
 }
 
 .container {
+  height: 100%;
+  width: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
 }
 
-.recordButton {
+.record-button-wrapper {
+  position: absolute;
+  top: calc(50% - 48px - 4rem);
   border-radius: 50%;
-  padding: 32px;
+  padding: 48px;
   background-color: #eaeaea;
   border: 0.01px solid #cecece;
   transition: transform 400ms;
   cursor: pointer;
   z-index: 100;
+  transition: top 300ms, transform 500ms;
 }
 
-.recordButton:hover {
+.record-button-wrapper:hover {
   transform: scale(1.25, 1.25);
 }
 
-.mic {
+.record-button-wrapper.recording {
+  transform: scale(0.5, 0.5);
+  top: 5%;
+}
+
+.record-button {
   font-size: 4rem !important;
   color: #444444;
   transition: color 400ms !important;
 }
 
-.recordButton .mic.recording,
-.recordButton:hover .mic.recording {
-  color: #7766ee;
+.record-button.play {
+  color: #2277dd;
 }
 
-audio {
-  margin: 48px;
-  border-radius: 64px;
-  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.2);
-  z-index: 100;
+.record-button.stop {
+  color: #444444;
 }
 
-.canvas-wrapper {
+.record-button.record {
+  color: #cc3355;
+}
+
+#canvas-wrapper {
   position: absolute;
   top: 0;
   left: 0;
@@ -69,18 +79,9 @@ audio {
   z-index: 10;
 }
 
-#oscilloscope {
+#barsGraph {
   border-radius: 4px;
   box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.2);
-}
-
-#metter {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 10;
 }
 
 .transcript {
@@ -88,8 +89,14 @@ audio {
   color: #ffffff;
   font-size: 1.5rem;
   height: 1.75rem;
+  padding-top: 16rem;
   padding-left: 32px;
   padding-right: 32px;
   text-align: center;
-  font-weight: 'bold';
+  font-weight: bold;
+  transition: padding-top 400ms;
+}
+
+.transcript.recording {
+  padding-top: 0px;
 }
