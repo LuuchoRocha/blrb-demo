@@ -88,7 +88,7 @@ const BLRB = () => {
   const [src, setSrc] = useState('');
   const [border, setBorder] = useState(0);
   const [borderColor, setBorderColor] = useState('#9977ff');
-  const [transcript, setTranscript] = useState('');
+  const [transcript, setTranscript] = useState([]);
 
   const size = useWindowSize();
 
@@ -158,7 +158,7 @@ const BLRB = () => {
     if (!recording) {
       socket.current.emit('startRecognition');
       setSrc('');
-      setTranscript('');
+      setTranscript([]);
       mediaRecorder.current = RecordRTC(stream.current, {
         recorderType: RecordRTC.StereoAudioRecorder,
         type: 'audio',
@@ -198,12 +198,6 @@ const BLRB = () => {
   useEffect(() => {
     socket.current = io();
 
-    socket.current.on('transcript', (data) => {
-      if (data.results && data.results[0].alternatives) {
-        setTranscript(data.results[0].alternatives[0].transcript);
-      }
-    });
-
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices.getUserMedia({audio: true}).then(async (s) => {
         stream.current = s;
@@ -232,6 +226,21 @@ const BLRB = () => {
     };
   }, [animate]);
 
+  useEffect(() => {
+    let offset = 0;
+    if (socket.current) {
+      socket.current.on('transcript', (data) => {
+        transcript.splice(offset, 1);
+        if (data.results && data.results[0].isFinal) {
+          transcript.push(data.results[0].alternatives[0].transcript);
+          offset++;
+        } else {
+          transcript.push(data.results[0].alternatives[0].transcript);
+        }
+      });
+    }
+  }, [transcript]);
+
   return (
     <div className="container">
       <div
@@ -248,7 +257,7 @@ const BLRB = () => {
         <MicRounded className={'mic ' + (recording ? 'recording' : '')} />
       </div>
       <AudioPlayer />
-      <p className="transcript">{transcript}</p>
+      <p className="transcript">{transcript.join(' ')}</p>
     </div>
   );
 };

@@ -4,12 +4,11 @@ const pino = require('express-pino-logger');
 const http = require('http');
 const io = require('socket.io');
 const path = require('path');
-const uuid = require('uuid').v4;
 const speech = require('@google-cloud/speech');
 
 const encoding = 'LINEAR16';
 const sampleRateHertz = 16000;
-const languageCode = 'es-AR';
+const languageCode = 'en-US';
 
 const request = {
   config: {
@@ -17,14 +16,24 @@ const request = {
     sampleRateHertz: sampleRateHertz,
     languageCode: languageCode,
     enableWordTimeOffsets: true,
+    enableAutomaticPunctuation: true,
   },
-  single_utterance: true,
   interimResults: true,
 };
 
 class Server {
   constructor() {
-    this.client = new speech.SpeechClient();
+    if (process.env.NODE_ENV === 'production') {
+      this.client = new speech.SpeechClient({
+        projectId: process.env.GOOGLE_PROJECT_ID,
+        credentials: {
+          client_email: process.env.GOOGLE_CLIENT_EMAIL,
+          private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        },
+      });
+    } else {
+      this.client = new speech.SpeechClient();
+    }
     this.streams = {};
     this.app = express();
     this.addMiddlewares();
@@ -53,7 +62,10 @@ class Server {
     this.socket = io(this.server);
 
     this.socket.on('connection', (socket) => {
-      const id = 'lucho';
+      const id =
+        process.env.NODE_ENV === 'production'
+          ? socket.handshake.address
+          : socket.handshake.headers['x-forwarded-for'];
 
       socket.on('startRecognition', () => {
         startRecognitionStream(socket);

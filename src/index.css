@@ -1,10 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
 html,
 body {
   height: 100%;
 }
 
 body {
-  font: 14px 'Century Gothic', Futura, sans-serif;
+  font-family: 'Roboto', sans-serif;
   margin: 0px !important;
   background: #1f1f1f;
 }
@@ -84,9 +86,10 @@ audio {
 .transcript {
   z-index: 10;
   color: #ffffff;
-  font-size: 2rem;
-  height: 2rem;
-  padding-left: 64px;
-  padding-right: 64px;
+  font-size: 1.5rem;
+  height: 1.75rem;
+  padding-left: 32px;
+  padding-right: 32px;
   text-align: center;
+  font-weight: 'bold';
 }
