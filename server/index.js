@@ -3,15 +3,29 @@ const bodyParser = require('body-parser');
 const pino = require('express-pino-logger');
 const http = require('http');
 const io = require('socket.io');
-const ss = require('socket.io-stream');
-const fs = require('fs');
 const path = require('path');
-const speech = require('./speech');
 const uuid = require('uuid').v4;
+const speech = require('@google-cloud/speech');
+
+const encoding = 'LINEAR16';
+const sampleRateHertz = 16000;
+const languageCode = 'es-AR';
+
+const request = {
+  config: {
+    encoding: encoding,
+    sampleRateHertz: sampleRateHertz,
+    languageCode: languageCode,
+    enableWordTimeOffsets: true,
+  },
+  single_utterance: true,
+  interimResults: true,
+};
 
 class Server {
   constructor() {
-    this.clients = {};
+    this.client = new speech.SpeechClient();
+    this.streams = {};
     this.app = express();
     this.addMiddlewares();
     this.serveStatic();
@@ -39,25 +53,42 @@ class Server {
     this.socket = io(this.server);
 
     this.socket.on('connection', (socket) => {
-      const id = uuid();
+      const id = 'lucho';
 
-      ss(socket).on('stream', (stream, data) => {
-        if (!this.clients[id]) {
-          this.clients[id] = {
-            file: `${id}-${Date.now()}.wav`,
-          };
+      socket.on('startRecognition', () => {
+        startRecognitionStream(socket);
+      });
+
+      socket.on('stopRecognition', () => {
+        stopRecognitionStream();
+      });
+
+      socket.on('streamAudio', (chunk) => {
+        if (this.streams[id]) {
+          this.streams[id].write(chunk);
         }
-
-        stream.pipe(fs.createWriteStream(this.clients[id].file, {flags: 'a'}));
-
-        speech.speechStreamToText(stream, (response) => {
-          socket.emit('translated', response);
-        });
       });
 
-      socket.on('correct', async (audio) => {
-        socket.emit('corrected', await speech.speechToText(audio));
-      });
+      const startRecognitionStream = (socket) => {
+        this.streams[id] = this.client
+          .streamingRecognize(request)
+          .on('error', console.error)
+          .on('data', (data) => {
+            socket.emit('transcript', data);
+
+            if (data.results[0] && data.results[0].isFinal) {
+              stopRecognitionStream();
+              startRecognitionStream(socket);
+            }
+          });
+      };
+
+      const stopRecognitionStream = () => {
+        if (this.streams[id]) {
+          this.streams[id].end();
+        }
+        this.streams[id] = null;
+      };
     });
   }
 

@@ -86,4 +86,7 @@ audio {
   color: #ffffff;
   font-size: 2rem;
   height: 2rem;
+  padding-left: 64px;
+  padding-right: 64px;
+  text-align: center;
 }
