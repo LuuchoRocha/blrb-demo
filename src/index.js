@@ -103,6 +103,7 @@ const BLRB = () => {
   const mediaRecorder = useRef(null);
   const analyser = useRef(null);
   const processor = useRef(null);
+  const source = useRef(null);
 
   const socket = useRef(null);
 
@@ -185,8 +186,12 @@ const BLRB = () => {
     setRecording(false);
 
     socket.current.emit('stopRecognition');
-    mediaStream.current.disconnect();
+
     processor.current.onaudioprocess = null;
+    mediaStream.current.disconnect();
+    source.current = audioCtx.current.createMediaElementSource(document.querySelector('audio'));
+    source.current.connect(analyser.current);
+    analyser.current.connect(audioCtx.current.destination);
 
     mediaRecorder.current.stopRecording(function () {
       const blob = mediaRecorder.current.getBlob();
@@ -195,9 +200,17 @@ const BLRB = () => {
     });
   }, []);
 
-  const handlePlay = useCallback(() => {}, []);
+  const handlePlay = useCallback(() => {
+    setPlaying(true);
+    const audio = document.querySelector('audio');
+    audio.play();
+  }, []);
 
-  const handlePause = useCallback(() => {}, []);
+  const handlePause = useCallback(() => {
+    setPlaying(false);
+    const audio = document.querySelector('audio');
+    audio.pause();
+  }, []);
   
   const handleOnClick = useCallback(() => {
     switch (true) {
@@ -290,13 +303,18 @@ const BLRB = () => {
         className={'record-button-wrapper ' + (recording ? 'recording' : '')}
         onClick={handleOnClick}
         key="button"
-        style={{boxShadow: `0px 0px 0px 1px #000000`}}
+        style={{boxShadow: `0px 0px 0px ${border}px #8a69f7`}}
       >
         <RecordButton />
       </div>
       <p className={'transcript ' + (recording ? 'recording' : '')}>
         {transcript.join(' ')}
       </p>
+      <audio controls={false}>
+        {src.length && (
+          <source src={src} type="audio/wav" />
+        )}
+      </audio>
     </div>
   );
 };

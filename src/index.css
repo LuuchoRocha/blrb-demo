@@ -100,3 +100,7 @@ body {
 .transcript.recording {
   padding-top: 0px;
 }
+
+.player {
+  z-index: 20;
+}
