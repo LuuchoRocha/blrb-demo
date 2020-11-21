@@ -4,104 +4,27 @@ const pino = require('express-pino-logger');
 const http = require('http');
 const io = require('socket.io');
 const path = require('path');
-const speech = require('@google-cloud/speech');
-
-const encoding = 'LINEAR16';
-const sampleRateHertz = 16000;
-const languageCode = 'en-US';
-
-const request = {
-  config: {
-    encoding: encoding,
-    sampleRateHertz: sampleRateHertz,
-    languageCode: languageCode,
-    enableWordTimeOffsets: true,
-    enableAutomaticPunctuation: true,
-  },
-  interimResults: true,
-};
+const speechClient = require('./speech-client');
 
 class Server {
   constructor() {
-    if (process.env.NODE_ENV === 'production') {
-      this.client = new speech.SpeechClient({
-        projectId: process.env.GOOGLE_PROJECT_ID,
-        credentials: {
-          client_email: process.env.GOOGLE_CLIENT_EMAIL,
-          private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-        },
-      });
-    } else {
-      this.client = new speech.SpeechClient();
-    }
-    this.streams = {};
-    this.app = express();
+    this.createApp();
     this.addMiddlewares();
-    this.serveStatic();
     this.defineRoutes();
+    this.serveStatic();
     this.createServer();
+    this.createSpeechClient();
     this.createSocket();
+    this.initializeStreams();
+  }
+
+  createApp() {
+    this.app = express();
   }
 
   addMiddlewares() {
     this.app.use(bodyParser.urlencoded({extended: false}));
     this.app.use(pino());
-  }
-
-  serveStatic() {
-    if (process.env.NODE_ENV === 'production') {
-      this.app.use(express.static(path.join(__dirname, '../build')));
-    }
-  }
-
-  createServer() {
-    this.server = http.createServer(this.app);
-  }
-
-  createSocket() {
-    this.socket = io(this.server);
-
-    this.socket.on('connection', (socket) => {
-      const id =
-        process.env.NODE_ENV === 'production'
-          ? socket.handshake.address
-          : socket.handshake.headers['x-forwarded-for'];
-
-      socket.on('startRecognition', () => {
-        startRecognitionStream(socket);
-      });
-
-      socket.on('stopRecognition', () => {
-        stopRecognitionStream();
-      });
-
-      socket.on('streamAudio', (chunk) => {
-        if (this.streams[id]) {
-          this.streams[id].write(chunk);
-        }
-      });
-
-      const startRecognitionStream = (socket) => {
-        this.streams[id] = this.client
-          .streamingRecognize(request)
-          .on('error', console.error)
-          .on('data', (data) => {
-            socket.emit('transcript', data);
-
-            if (data.results[0] && data.results[0].isFinal) {
-              stopRecognitionStream();
-              startRecognitionStream(socket);
-            }
-          });
-      };
-
-      const stopRecognitionStream = () => {
-        if (this.streams[id]) {
-          this.streams[id].end();
-        }
-        this.streams[id] = null;
-      };
-    });
   }
 
   defineRoutes() {
@@ -116,6 +39,47 @@ class Server {
         res.send(JSON.stringify({greeting: `Hello ${name}!`}));
       });
     }
+  }
+
+  serveStatic() {
+    if (process.env.NODE_ENV === 'production') {
+      this.app.use(express.static(path.join(__dirname, '../build')));
+    }
+  }
+
+  createServer() {
+    this.server = http.createServer(this.app);
+  }
+
+  createSpeechClient() {
+    this.speechClient = speechClient();
+  }
+
+  createSocket() {
+    this.socket = io(this.server);
+
+    this.socket.on('connection', (socket) => {
+      const id =
+        process.env.NODE_ENV === 'production'
+          ? socket.handshake.address
+          : socket.handshake.headers['x-forwarded-for'];
+
+      socket.on('startRecognition', () => {
+        this.speechClient.startRecognitionStream(id, socket);
+      });
+
+      socket.on('stopRecognition', () => {
+        this.speechClient.stopRecognitionStream(id);
+      });
+
+      socket.on('streamAudio', (chunk) => {
+        this.speechClient.write(id, chunk);
+      });
+    });
+  }
+
+  initializeStreams() {
+    this.streams = {};
   }
 
   listen() {
