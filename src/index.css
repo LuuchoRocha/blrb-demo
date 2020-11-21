@@ -17,8 +17,6 @@ body {
 
 #root {
   height: 100%;
-  display: flex;
-  justify-content: center;
 }
 
 .container {
@@ -32,24 +30,28 @@ body {
 
 .record-button-wrapper {
   position: absolute;
-  top: calc(50% - 48px - 4rem);
-  border-radius: 50%;
+  top: 4rem;
+  height: 4rem;
+  width: 4rem;
+  left: calc(50% - 48px - 2rem);
   padding: 48px;
+  border-radius: 50%;
   background-color: #eaeaea;
   border: 0.01px solid #cecece;
-  transition: transform 400ms;
+  transition: border linear 200ms, top ease 200ms, transform ease 400ms;
   cursor: pointer;
-  z-index: 100;
-  transition: top 300ms, transform 500ms;
 }
 
 .record-button-wrapper:hover {
-  transform: scale(1.25, 1.25);
+  transform: scale(1.1, 1.1);
 }
 
-.record-button-wrapper.recording {
-  transform: scale(0.5, 0.5);
-  top: 5%;
+.record-button-wrapper.empty {
+  top: calc(50% - 2rem - 48px);
+}
+
+.record-button-wrapper.empty:hover {
+  transform: scale(1.25, 1.25);
 }
 
 .record-button {
@@ -76,7 +78,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 10;
+  z-index: -1;
 }
 
 #barsGraph {
@@ -85,11 +87,8 @@ body {
 }
 
 .transcript {
-  z-index: 10;
   color: #ffffff;
   font-size: 1.5rem;
-  height: 1.75rem;
-  padding-top: 16rem;
   padding-left: 32px;
   padding-right: 32px;
   text-align: center;
@@ -101,6 +100,63 @@ body {
   padding-top: 0px;
 }
 
-.player {
-  z-index: 20;
+.seek-bar {
+  -webkit-appearance: none;
+  background: transparent;
+  position: absolute;
+  top: calc(17.5rem);
+  width: 30%;
+  left: 35%;
+  opacity: 1;
+  transition: opacity ease 200ms;
+}
+
+.seek-bar.hidden {
+  opacity: 0;
+}
+
+.seek-bar:focus {
+  outline: none;
+}
+
+.seek-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+}
+
+.seek-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 1rem;
+  width: 1rem;
+  margin-top: -0.25rem;
+  border-radius: 50%;
+  background: #8a69f7;
+  box-shadow: 0 0 4px #00000077;
+  cursor: pointer;
+}
+
+.seek-bar::-moz-range-thumb {
+  -webkit-appearance: none;
+  height: 1rem;
+  width: 1rem;
+  margin-top: -0.25rem;
+  border-radius: 50%;
+  background: #8a69f7;
+  box-shadow: 0 0 4px #00000077;
+  cursor: pointer;
+}
+
+.seek-bar::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 0.5rem;
+  cursor: pointer;
+  background: #777777;
+  border-radius: 0.5rem;
+}
+
+.seek-bar::-moz-range-track {
+  width: 100%;
+  height: 0.5rem;
+  cursor: pointer;
+  background: #777777;
+  border-radius: 0.5rem;
 }

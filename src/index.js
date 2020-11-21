@@ -3,8 +3,8 @@ import ReactDOM from 'react-dom';
 import RecordRTC from 'recordrtc';
 import io from 'socket.io-client';
 import AudioCtx from './AudioCtx';
-import Button from './Button'
-import { useWindowSize } from './WindowSize'
+import Button from './Button';
+import {useWindowSize} from './WindowSize';
 import {range} from './Interpolations';
 import {getColor, resampleBuffer} from './Utils';
 import * as Constants from './Constants';
@@ -29,6 +29,8 @@ const BLRB = () => {
   const [src, setSrc] = useState('');
   const [border, setBorder] = useState(0);
   const [transcript, setTranscript] = useState([]);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [maxTime, setMaxTime] = useState(0);
 
   const animate = useCallback(() => {
     let bufferLength = analyser.current.frequencyBinCount;
@@ -72,7 +74,6 @@ const BLRB = () => {
 
       average = average / bufferLength;
       borderWidth = range(0, size.height / 2, 0, Constants.MAX_BORDER, average);
-
       setBorder(borderWidth);
     };
 
@@ -106,20 +107,32 @@ const BLRB = () => {
   }, []);
 
   const handleStop = useCallback(() => {
-    setRecording(false);
+    const audio = document.querySelector('audio');
 
     socket.current.emit('stopRecognition');
 
+    audio.onended = () => {
+      audio.load();
+      setPlaying(false);
+    };
+
+    audio.ontimeupdate = () => {
+      setCurrentTime(audio.currentTime);
+    };
+
+    audio.ondurationchange = () => {
+      setMaxTime(audio.duration);
+    };
+
     processor.current.onaudioprocess = null;
     mediaStream.current.disconnect();
-    source.current = audioCtx.current.createMediaElementSource(document.querySelector('audio'));
+    source.current = audioCtx.current.createMediaElementSource(audio);
     source.current.connect(analyser.current);
     analyser.current.connect(audioCtx.current.destination);
 
     mediaRecorder.current.stopRecording(function () {
-      const blob = mediaRecorder.current.getBlob();
-      setSrc(URL.createObjectURL(blob));
-      socket.current.emit('correct', blob);
+      setSrc(URL.createObjectURL(mediaRecorder.current.getBlob()));
+      setRecording(false);
     });
   }, []);
 
@@ -134,7 +147,7 @@ const BLRB = () => {
     const audio = document.querySelector('audio');
     audio.pause();
   }, []);
-  
+
   const handleOnClick = useCallback(() => {
     switch (true) {
       case !src.length && !recording:
@@ -148,7 +161,15 @@ const BLRB = () => {
       default:
         return handleRecord();
     }
-  }, [handlePause, handlePlay, handleRecord, handleStop, playing, recording, src.length]);
+  }, [
+    handlePause,
+    handlePlay,
+    handleRecord,
+    handleStop,
+    playing,
+    recording,
+    src.length,
+  ]);
 
   useEffect(() => {
     socket.current = io();
@@ -181,6 +202,13 @@ const BLRB = () => {
     };
   }, [animate]);
 
+  const handleOnChangeSeekBar = useCallback((e) => {
+    const time = e.nativeEvent.target.value;
+    const audio = document.querySelector('audio');
+    audio.currentTime = time;
+    setCurrentTime(time);
+  }, []);
+
   useEffect(() => {
     let offset = 0;
     if (socket.current) {
@@ -204,15 +232,28 @@ const BLRB = () => {
       >
         <canvas id="barsGraph" width={size.width} height={size.height} />
       </div>
-      <Button onClick={handleOnClick} src={src} playing={playing} recording={recording} border={border} />
+      <Button
+        onClick={handleOnClick}
+        src={src}
+        playing={playing}
+        recording={recording}
+        border={border}
+      />
+      <audio controls={false}>
+        {src.length && <source src={src} type="audio/wav" />}
+      </audio>
+      <input
+        type="range"
+        className={"seek-bar " + (src.length ? '' : 'hidden')}
+        step="any"
+        min={0}
+        max={maxTime}
+        value={currentTime}
+        onChange={handleOnChangeSeekBar}
+      />
       <p className={'transcript ' + (recording ? 'recording' : '')}>
         {transcript.join(' ')}
       </p>
-      <audio controls={false}>
-        {src.length && (
-          <source src={src} type="audio/wav" />
-        )}
-      </audio>
     </div>
   );
 };

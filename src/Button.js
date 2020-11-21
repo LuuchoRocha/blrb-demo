@@ -1,5 +1,5 @@
 import React from 'react';
-import RecordIcon from '@material-ui/icons/MicNoneRounded';
+import RecordIcon from '@material-ui/icons/MicRounded';
 import StopIcon from '@material-ui/icons/StopRounded';
 import PlayIcon from '@material-ui/icons/PlayArrowRounded';
 import PauseIcon from '@material-ui/icons/PauseRounded';
@@ -34,7 +34,7 @@ export default function RecordButton({
 
   return (
     <div
-      className={'record-button-wrapper ' + (recording ? 'recording' : '')}
+      className={'record-button-wrapper ' + (src.length || recording ? '' : 'empty')}
       onClick={onClick}
       key="button"
       style={{boxShadow: `0px 0px 0px ${border}px #8a69f7`}}
