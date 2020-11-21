@@ -1,0 +1,6 @@
+const MIN_DECIBELS = -100.0;
+const MAX_DECIBELS = 0.0;
+const GAP = 2;
+const MAX_BORDER = 100;
+
+export {MIN_DECIBELS, MAX_DECIBELS, GAP, MAX_BORDER};
