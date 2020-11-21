@@ -105,8 +105,8 @@ body {
   background: transparent;
   position: absolute;
   top: calc(17.5rem);
-  width: 30%;
-  left: 35%;
+  width: 60%;
+  left: 20%;
   opacity: 1;
   transition: opacity ease 200ms;
 }

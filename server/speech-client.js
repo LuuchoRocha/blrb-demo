@@ -28,23 +28,23 @@ class SpeechClient {
   }
 
   startRecognitionStream(id, socket, languageCode = 'en-US') {
-    this.clients[id] = this.speechClient
-      .streamingRecognize({
-        ...this.request,
-        config: {
-          ...this.request.config,
-          languageCode,
-        },
-      })
-      .on('error', console.error)
-      .on('data', (data) => {
-        socket.emit('transcript', data);
+    // this.clients[id] = this.speechClient
+    //   .streamingRecognize({
+    //     ...this.request,
+    //     config: {
+    //       ...this.request.config,
+    //       languageCode,
+    //     },
+    //   })
+    //   .on('error', console.error)
+    //   .on('data', (data) => {
+    //     socket.emit('transcript', data);
 
-        if (data.results[0] && data.results[0].isFinal) {
-          this.stopRecognitionStream();
-          this.startRecognitionStream(socket);
-        }
-      });
+    //     if (data.results[0] && data.results[0].isFinal) {
+    //       this.stopRecognitionStream();
+    //       this.startRecognitionStream(socket);
+    //     }
+    //   });
   }
 
   stopRecognitionStream(id) {
