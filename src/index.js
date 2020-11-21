@@ -92,8 +92,6 @@ const BLRB = () => {
       type: 'audio',
       mimeType: 'audio/wav',
       numberOfAudioChannels: 1,
-      sampleRate: 44100,
-      desiredSampRate: 16000,
     });
 
     mediaRecorder.current.startRecording();
