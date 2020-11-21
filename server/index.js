@@ -4,6 +4,7 @@ const pino = require('express-pino-logger');
 const http = require('http');
 const io = require('socket.io');
 const path = require('path');
+const basicAuth = require('express-basic-auth');
 const speechClient = require('./speech-client');
 
 class Server {
@@ -23,6 +24,15 @@ class Server {
   }
 
   addMiddlewares() {
+    this.app.use(
+      basicAuth({
+        challenge: true,
+        users: {
+          david: 'david',
+          plum: 'plum',
+        },
+      })
+    );
     this.app.use(bodyParser.urlencoded({extended: false}));
     this.app.use(pino());
   }
@@ -42,7 +52,7 @@ class Server {
   }
 
   serveStatic() {
-    if (process.env.NODE_ENV === 'production') {
+    if (true || process.env.NODE_ENV === 'production') {
       this.app.use(express.static(path.join(__dirname, '../build')));
     }
   }
