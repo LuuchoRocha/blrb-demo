@@ -13,17 +13,17 @@ import './index.css';
 const BLRB = () => {
   const size = useWindowSize();
 
-  const audioCtx = useRef(null);
-  const stream = useRef(null);
-  const mediaStream = useRef(null);
-  const mediaRecorder = useRef(null);
-  const analyser = useRef(null);
-  const processor = useRef(null);
-  const source = useRef(null);
-
-  const socket = useRef(null);
-  const canvasFrame = useRef(null);
-  const wordsFrame = useRef(null);
+  const audioCtx = useRef();
+  const stream = useRef();
+  const mediaStream = useRef();
+  const mediaRecorder = useRef();
+  const analyser = useRef();
+  const processor = useRef();
+  const source = useRef();
+  const socket = useRef();
+  const barsFrame = useRef();
+  const wordsFrame = useRef();
+  const audio = useRef();
 
   const [recording, setRecording] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -33,7 +33,7 @@ const BLRB = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [maxTime, setMaxTime] = useState(0);
 
-  const animate = useCallback(() => {
+  const animateBars = useCallback(() => {
     let bufferLength = analyser.current.frequencyBinCount;
     let dataArray = new Float32Array(bufferLength);
 
@@ -45,16 +45,16 @@ const BLRB = () => {
     oscCtx.clearRect(0, 0, size.width, size.height);
 
     const draw = function () {
-      canvasFrame.current = requestAnimationFrame(draw);
+      barsFrame.current = requestAnimationFrame(draw);
 
       analyser.current.getFloatFrequencyData(dataArray);
 
       oscCtx.fillStyle = '#1f1f1f';
       oscCtx.fillRect(0, 0, size.width, size.height);
 
+      const barWidth = size.width / bufferLength;
       let x = 0;
       let average = 0;
-      let barWidth = size.width / bufferLength;
       let barHeight, borderWidth;
 
       for (let i = 0; i < bufferLength; i++) {
@@ -75,6 +75,7 @@ const BLRB = () => {
 
       average = average / bufferLength;
       borderWidth = range(0, size.height / 2, 0, Constants.MAX_BORDER, average);
+
       setBorder(borderWidth);
     };
 
@@ -82,10 +83,10 @@ const BLRB = () => {
   }, [size.height, size.width]);
 
   const animateWords = useCallback(() => {
-    const drawWords = function () {
-      let startTime, endTime;
+    const draw = function () {
+      wordsFrame.current = requestAnimationFrame(draw);
 
-      wordsFrame.current = requestAnimationFrame(drawWords);
+      let startTime, endTime;
 
       const words = document.querySelectorAll('.transcript span');
       const time = document.querySelector('audio').currentTime;
@@ -98,8 +99,20 @@ const BLRB = () => {
       }
     };
 
-    drawWords();
+    draw();
   }, []);
+
+  const stopBarsAnimation = () => {
+    if (barsFrame.current) {
+      cancelAnimationFrame(barsFrame.current);
+    }
+  };
+
+  const stopWordsAnimation = () => {
+    if (wordsFrame.current) {
+      cancelAnimationFrame(wordsFrame.current);
+    }
+  };
 
   const handleRecord = useCallback(() => {
     setSrc('');
@@ -126,26 +139,24 @@ const BLRB = () => {
   }, []);
 
   const handleStop = useCallback(() => {
-    const audio = document.querySelector('audio');
-
     socket.current.emit('stopRecognition');
 
-    audio.onended = () => {
-      audio.load();
+    audio.current.onended = () => {
+      audio.current.load();
       setPlaying(false);
     };
 
-    audio.ontimeupdate = () => {
-      setCurrentTime(audio.currentTime);
+    audio.current.ontimeupdate = () => {
+      setCurrentTime(audio.current.currentTime);
     };
 
-    audio.ondurationchange = () => {
-      setMaxTime(audio.duration);
+    audio.current.ondurationchange = () => {
+      setMaxTime(audio.current.duration);
     };
 
     processor.current.onaudioprocess = null;
     mediaStream.current.disconnect();
-    source.current = audioCtx.current.createMediaElementSource(audio);
+    source.current = audioCtx.current.createMediaElementSource(audio.current);
     source.current.connect(analyser.current);
     analyser.current.connect(audioCtx.current.destination);
 
@@ -157,15 +168,20 @@ const BLRB = () => {
 
   const handlePlay = useCallback(() => {
     setPlaying(true);
-    const audio = document.querySelector('audio');
-    audio.play();
+
+    audio.current.play();
+
+    animateBars();
     animateWords();
-  }, [animateWords]);
+  }, [animateBars, animateWords]);
 
   const handlePause = useCallback(() => {
     setPlaying(false);
-    const audio = document.querySelector('audio');
-    audio.pause();
+
+    audio.current.pause();
+
+    stopWordsAnimation();
+    stopBarsAnimation();
   }, []);
 
   const handleOnClick = useCallback(() => {
@@ -191,6 +207,62 @@ const BLRB = () => {
     src.length,
   ]);
 
+  const handleOnChangeSeekBar = useCallback((e) => {
+    audio.current.currentTime = e.nativeEvent.target.value;
+    setCurrentTime(audio.current.currentTime);
+  }, []);
+
+  const renderTranscript = useCallback(() => {
+    return (
+      <div className="transcript" key={Date.now()}>
+        {transcript.map((t) => {
+          if (t.isFinal) {
+            return t.words.map((w) => {
+              const startTime = parseFloat(
+                w.startTime.seconds + '.' + w.startTime.nanos
+              );
+              const endTime = parseFloat(
+                w.endTime.seconds + '.' + w.endTime.nanos
+              );
+
+              return (
+                <span
+                  start-time={startTime}
+                  end-time={endTime}
+                  key={`${startTime}-${w.word}-${endTime}`}
+                >
+                  {w.word}&nbsp;
+                </span>
+              );
+            });
+          } else {
+            return <span key={t.words}>{t.words}&nbsp;</span>;
+          }
+        })}
+      </div>
+    );
+  }, [transcript]);
+
+  useEffect(() => {
+    let offset = 0;
+
+    if (socket.current) {
+      socket.current.on('transcript', (data) => {
+        const isFinal = data.results[0].isFinal;
+        const words = isFinal
+          ? data.results[0].alternatives[0].words
+          : data.results[0].alternatives[0].transcript;
+
+        transcript.splice(offset, transcript.length - offset);
+        transcript.push({words, isFinal});
+
+        if (isFinal) {
+          offset += words.length;
+        }
+      });
+    }
+  }, [transcript]);
+
   useEffect(() => {
     socket.current = io();
 
@@ -211,91 +283,14 @@ const BLRB = () => {
         mediaStream.current.connect(analyser.current);
         mediaStream.current.connect(processor.current);
 
-        animate();
+        animateBars();
       });
     }
-
-    return () => {
-      if (canvasFrame.current) {
-        cancelAnimationFrame(canvasFrame.current);
-      }
-    };
-  }, [animate]);
-
-  const handleOnChangeSeekBar = useCallback((e) => {
-    const time = e.nativeEvent.target.value;
-    const audio = document.querySelector('audio');
-    audio.currentTime = time;
-    setCurrentTime(time);
-  }, []);
-
-  const renderTranscript = useCallback(
-    (e) => {
-      const content = transcript.map((t) => {
-        if (t.isFinal) {
-          return t.words.map((w) => {
-            const startTime = parseFloat(
-              w.startTime.seconds + '.' + w.startTime.nanos
-            );
-            const endTime = parseFloat(
-              w.endTime.seconds + '.' + w.endTime.nanos
-            );
-
-            return (
-              <span
-                start-time={startTime}
-                end-time={endTime}
-                key={`${startTime}-${w.word}-${endTime}`}
-              >
-                {w.word}&nbsp;
-              </span>
-            );
-          });
-        } else {
-          return <span key={t.words}>{t.words}&nbsp;</span>;
-        }
-      });
-
-      return (
-        <div className="transcript" key={Date.now()}>
-          {content}
-        </div>
-      );
-    },
-    [transcript]
-  );
-
-  useEffect(() => {
-    let offset = 0;
-    if (socket.current) {
-      socket.current.on('transcript', (data) => {
-        const isFinal = data.results[0].isFinal;
-        const words = isFinal
-          ? data.results[0].alternatives[0].words
-          : data.results[0].alternatives[0].transcript;
-
-        transcript.splice(offset, transcript.length - offset);
-        transcript.push({words, isFinal});
-
-        if (isFinal) {
-          offset += words.length;
-        }
-      });
-    }
-  }, [transcript]);
-
-  useEffect(() => {
-    if (!playing && wordsFrame.current) {
-      cancelAnimationFrame(wordsFrame.current);
-    }
-  }, [playing]);
+  }, [animateBars]);
 
   return (
     <div className="container">
-      <div
-        id="canvas-wrapper"
-        style={{width: size.width + 'px', height: size.height + 'px'}}
-      >
+      <div id="canvas-wrapper" style={{width: size.width, height: size.height}}>
         <canvas id="barsGraph" width={size.width} height={size.height} />
       </div>
       <Button
@@ -305,7 +300,7 @@ const BLRB = () => {
         recording={recording}
         border={border}
       />
-      <audio controls={false}>
+      <audio controls={false} ref={audio}>
         {src.length && <source src={src} type="audio/wav" />}
       </audio>
       <input
