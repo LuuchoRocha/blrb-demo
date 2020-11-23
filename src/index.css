@@ -96,8 +96,8 @@ body {
   transition: padding-top 400ms;
 }
 
-.transcript.recording {
-  padding-top: 0px;
+.active {
+  color: #bbaaff;
 }
 
 .seek-bar {
@@ -105,8 +105,6 @@ body {
   background: transparent;
   position: absolute;
   top: calc(17.5rem);
-  width: 60%;
-  left: 20%;
   opacity: 1;
   transition: opacity ease 200ms;
 }
@@ -159,4 +157,32 @@ body {
   cursor: pointer;
   background: #777777;
   border-radius: 0.5rem;
+}
+
+@media screen and (max-width: 720px) {
+  .seek-bar {
+    width: 60%;
+    left: 20%;
+  }
+}
+
+@media screen and (min-width: 721px) and (max-width: 900px) {
+  .seek-bar {
+    width: 50%;
+    left: 25%;
+  }
+}
+
+@media screen and (min-width: 901px) and (max-width: 1080px) {
+  .seek-bar {
+    width: 40%;
+    left: 30%;
+  }
+}
+
+@media screen and (min-width: 1081px) {
+  .seek-bar {
+    width: 30%;
+    left: 35%;
+  }
 }

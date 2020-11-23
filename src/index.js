@@ -22,7 +22,8 @@ const BLRB = () => {
   const source = useRef(null);
 
   const socket = useRef(null);
-  const frame = useRef(null);
+  const canvasFrame = useRef(null);
+  const wordsFrame = useRef(null);
 
   const [recording, setRecording] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -44,7 +45,7 @@ const BLRB = () => {
     oscCtx.clearRect(0, 0, size.width, size.height);
 
     const draw = function () {
-      frame.current = requestAnimationFrame(draw);
+      canvasFrame.current = requestAnimationFrame(draw);
 
       analyser.current.getFloatFrequencyData(dataArray);
 
@@ -79,6 +80,26 @@ const BLRB = () => {
 
     draw();
   }, [size.height, size.width]);
+
+  const animateWords = useCallback(() => {
+    const drawWords = function () {
+      let startTime, endTime;
+
+      wordsFrame.current = requestAnimationFrame(drawWords);
+
+      const words = document.querySelectorAll('.transcript span');
+      const time = document.querySelector('audio').currentTime;
+
+      for (const word of words) {
+        startTime = parseFloat(word.getAttribute('start-time'));
+        endTime = parseFloat(word.getAttribute('end-time'));
+
+        word.className = startTime <= time && time <= endTime ? 'active' : '';
+      }
+    };
+
+    drawWords();
+  }, []);
 
   const handleRecord = useCallback(() => {
     setSrc('');
@@ -138,7 +159,8 @@ const BLRB = () => {
     setPlaying(true);
     const audio = document.querySelector('audio');
     audio.play();
-  }, []);
+    animateWords();
+  }, [animateWords]);
 
   const handlePause = useCallback(() => {
     setPlaying(false);
@@ -194,8 +216,8 @@ const BLRB = () => {
     }
 
     return () => {
-      if (frame.current) {
-        cancelAnimationFrame(frame.current);
+      if (canvasFrame.current) {
+        cancelAnimationFrame(canvasFrame.current);
       }
     };
   }, [animate]);
@@ -207,20 +229,66 @@ const BLRB = () => {
     setCurrentTime(time);
   }, []);
 
+  const renderTranscript = useCallback(
+    (e) => {
+      const content = transcript.map((t) => {
+        if (t.isFinal) {
+          return t.words.map((w) => {
+            const startTime = parseFloat(
+              w.startTime.seconds + '.' + w.startTime.nanos
+            );
+            const endTime = parseFloat(
+              w.endTime.seconds + '.' + w.endTime.nanos
+            );
+
+            return (
+              <span
+                start-time={startTime}
+                end-time={endTime}
+                key={`${startTime}-${w.word}-${endTime}`}
+              >
+                {w.word}&nbsp;
+              </span>
+            );
+          });
+        } else {
+          return <span key={t.words}>{t.words}&nbsp;</span>;
+        }
+      });
+
+      return (
+        <div className="transcript" key={Date.now()}>
+          {content}
+        </div>
+      );
+    },
+    [transcript]
+  );
+
   useEffect(() => {
     let offset = 0;
     if (socket.current) {
       socket.current.on('transcript', (data) => {
-        transcript.splice(offset, 1);
-        if (data.results && data.results[0].isFinal) {
-          transcript.push(data.results[0].alternatives[0].transcript);
-          offset++;
-        } else {
-          transcript.push(data.results[0].alternatives[0].transcript);
+        const isFinal = data.results[0].isFinal;
+        const words = isFinal
+          ? data.results[0].alternatives[0].words
+          : data.results[0].alternatives[0].transcript;
+
+        transcript.splice(offset, transcript.length - offset);
+        transcript.push({words, isFinal});
+
+        if (isFinal) {
+          offset += words.length;
         }
       });
     }
   }, [transcript]);
+
+  useEffect(() => {
+    if (!playing && wordsFrame.current) {
+      cancelAnimationFrame(wordsFrame.current);
+    }
+  }, [playing]);
 
   return (
     <div className="container">
@@ -242,16 +310,14 @@ const BLRB = () => {
       </audio>
       <input
         type="range"
-        className={"seek-bar " + (src.length ? '' : 'hidden')}
+        className={'seek-bar ' + (src.length ? '' : 'hidden')}
         step="any"
         min={0}
         max={maxTime}
         value={currentTime}
         onChange={handleOnChangeSeekBar}
       />
-      <p className={'transcript ' + (recording ? 'recording' : '')}>
-        {transcript.join(' ')}
-      </p>
+      {renderTranscript()}
     </div>
   );
 };
