@@ -290,7 +290,7 @@ const BLRB = () => {
 
   return (
     <div className="container">
-      <div id="canvas-wrapper" style={{width: size.width, height: size.height}}>
+      <div id="canvas-wrapper">
         <canvas id="barsGraph" width={size.width} height={size.height} />
       </div>
       <Button

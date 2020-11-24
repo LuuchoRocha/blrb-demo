@@ -1,14 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
-html,
-body {
-  height: 100%;
+html {
+  overflow-x: hidden;
 }
 
 body {
   font-family: 'Roboto', sans-serif;
   margin: 0px !important;
   background: #1f1f1f;
+  height: 100%;
 }
 
 :focus {
@@ -20,12 +20,16 @@ body {
 }
 
 .container {
-  height: 100%;
   width: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
+}
+
+@media screen and (max-height: 720px) {
+  .container {
+    min-height: 720px;
+  }  
 }
 
 .record-button-wrapper {
@@ -93,7 +97,8 @@ body {
   padding-right: 32px;
   text-align: center;
   font-weight: bold;
-  transition: padding-top 400ms;
+  max-width: 80%;
+  margin-top: calc(18rem + 48px)
 }
 
 .active {
